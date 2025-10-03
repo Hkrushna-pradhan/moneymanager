@@ -16,30 +16,31 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    public static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60; // 5 hours
+    // Token validity (5 hours)
+    public static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60;
 
-    // Strong secret key
+    // Strong secret key (at least 64 chars for HS512)
     private final SecretKey secretKey = Keys.hmacShaKeyFor(
             "afafasfafafasfasfasfafacasdasfasxASFACASDFACASDFASFASFDAFASFASDAADSCSDFADCVSGCFVADXCcadwavfsfarvf"
                     .getBytes());
 
-    // get username/email from token
+    // ✅ Get username/email from token
     public String getUsernameFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
     }
 
-    // get expiration date
+    // ✅ Get expiration date
     public Date getExpirationDateFromToken(String token) {
         return getClaimFromToken(token, Claims::getExpiration);
     }
 
-    // extract any claim
+    // ✅ Extract any claim
     public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = getAllClaimsFromToken(token);
         return claimsResolver.apply(claims);
     }
 
-    // parse token
+    // ✅ Parse token
     private Claims getAllClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
@@ -48,17 +49,24 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // check expiration
+    // ✅ Check expiration
     private Boolean isTokenExpired(String token) {
         return getExpirationDateFromToken(token).before(new Date());
     }
 
-    // ✅ Generate token with email
+    // ✅ Generate token with UserDetails
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return doGenerateToken(claims, userDetails.getUsername()); // username = email
+        return doGenerateToken(claims, userDetails.getUsername()); // subject = email
     }
 
+    // ✅ Overloaded method: Generate token with email
+    public String generateToken(String email) {
+        Map<String, Object> claims = new HashMap<>();
+        return doGenerateToken(claims, email);
+    }
+
+    // ✅ Token builder
     private String doGenerateToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
@@ -69,9 +77,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    // validate token
+    // ✅ Validate token
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String username = getUsernameFromToken(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+
+    public String extractUsername(String jwt) {
+        return getUsernameFromToken(jwt);
     }
 }
